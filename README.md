@@ -1,1 +1,214 @@
 # Cotizador-VW-
+￼
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard de Ventas | VW</title>
+    <style>
+        :root {
+            --vw-blue: #001e50;
+            --vw-light: #00b0f0;
+            --bg-gray: #f4f7f9;
+        }
+        body { font-family: -apple-system, sans-serif; background: var(--bg-gray); margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 500px; margin: auto; }
+        
+        /* Tarjeta Principal */
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .logo-header { text-align: center; margin-bottom: 20px; }
+        .logo-header img { width: 60px; height: 60px; }
+        
+        h2 { color: var(--vw-blue); text-align: center; font-size: 22px; margin: 10px 0; font-weight: 700; }
+        
+        label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; margin-left: 5px; }
+        input { width: 100%; padding: 14px; margin: 5px 0 15px 0; border: 1.5px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: 0.3s; }
+        input:focus { border-color: var(--vw-light); outline: none; background: #f0faff; }
+
+        button { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn-calc { background: var(--vw-blue); color: white; }
+        .btn-calc:active { transform: scale(0.98); opacity: 0.9; }
+        
+        /* Render de la imagen */
+        #render-area { 
+            position: absolute; left: -9999px; width: 400px; background: white; padding: 30px; border-radius: 0;
+        }
+        .render-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid var(--vw-blue); padding-bottom: 10px; }
+        .render-header img { width: 50px; }
+        .render-header div { text-align: right; color: var(--vw-blue); font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { font-size: 12px; color: #888; }
+        .row-total { background: #f8f9fa; font-weight: bold; }
+
+        /* Historial */
+        .history-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .client-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .client-item:last-child { border: none; }
+        .client-info b { display: block; color: var(--vw-blue); font-size: 15px; }
+        .client-info span { font-size: 12px; color: #777; }
+        .btn-wa-sm { background: #25d366; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; text-decoration: none; font-weight: bold; }
+
+        #preview-img { width: 100%; margin-top: 20px; border-radius: 15px; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        .loader { display: none; text-align: center; padding: 20px; color: var(--vw-blue); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="logo-header">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg" alt="VW Logo">
+            <h2>Cotizador Digital</h2>
+        </div>
+        
+        <label>Nombre del Prospecto</label>
+        <input type="text" id="nombre" placeholder="Ej. Juan Pérez">
+        
+        <label>Número de Celular</label>
+        <input type="tel" id="tel" placeholder="229...">
+        
+        <label>Modelo de Interés</label>
+        <input type="text" id="vehiculo" placeholder="Ej. Jetta Sport">
+        
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label>Precio</label>
+                <input type="number" id="precio" placeholder="$0.00">
+            </div>
+            <div style="flex: 1;">
+                <label>Enganche</label>
+                <input type="number" id="enganche" placeholder="$0.00">
+            </div>
+        </div>
+
+        <button class="btn-calc" id="btnAction" onclick="generarCotizacion()">Generar e Imprimir</button>
+        
+        <div class="loader" id="loading">Creando diseño...</div>
+        
+        <img id="preview-img">
+        
+        <div id="instruccion-copia" style="display:none; text-align:center; margin-top:15px; background: #e7f3ff; padding: 10px; border-radius: 10px; font-size: 13px;">
+            ☝️ <b>Manten presionada la imagen</b> y elige "Copiar".<br>Luego pégala en el WhatsApp del cliente.
+        </div>
+    </div>
+
+    <div class="history-card">
+        <h3 style="color: var(--vw-blue); font-size: 16px; margin-top: 0;">Clientes Recientes</h3>
+        <div id="lista-clientes">
+            </div>
+    </div>
+</div>
+
+<div id="render-area">
+    <div class="render-header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg">
+        <div>COTIZACIÓN<br><span id="r-fecha"></span></div>
+    </div>
+    <div style="margin-bottom: 20px;">
+        <h1 style="margin: 0; color: var(--vw-blue); font-size: 24px;" id="r-vehiculo"></h1>
+        <p style="margin: 0; color: #555;">Preparada para: <b id="r-nombre"></b></p>
+    </div>
+    <table>
+        <tr><th>CONCEPTO</th><th style="text-align: right;">MONTO</th></tr>
+        <tr><td>Precio de Lista</td><td style="text-align: right;" id="r-precio"></td></tr>
+        <tr><td>Enganche</td><td style="text-align: right;" id="r-enganche"></td></tr>
+        <tr class="row-total"><td>Saldo a Financiar</td><td style="text-align: right;" id="r-saldo"></td></tr>
+    </table>
+    
+    <h4 style="margin: 20px 0 10px 0; color: var(--vw-blue);">PLANES MENSUALES</h4>
+    <table id="tabla-plazos">
+        </table>
+    <p style="font-size: 10px; color: #999; margin-top: 20px; text-align: center;">
+        Valores informativos calculados con tasa del 16.9%. Sujetos a cambios según perfil crediticio.
+    </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+    function generarCotizacion() {
+        const nombre = document.getElementById('nombre').value;
+        const tel = document.getElementById('tel').value;
+        const vehiculo = document.getElementById('vehiculo').value;
+        const precio = parseFloat(document.getElementById('precio').value);
+        const enganche = parseFloat(document.getElementById('enganche').value);
+
+        if (!nombre || !precio) return alert("Faltan datos");
+
+        document.getElementById('loading').style.display = 'block';
+
+        // Llenar render
+        document.getElementById('r-nombre').innerText = nombre;
+        document.getElementById('r-vehiculo').innerText = vehiculo.toUpperCase();
+        document.getElementById('r-precio').innerText = `$${precio.toLocaleString()}`;
+        document.getElementById('r-enganche').innerText = `$${enganche.toLocaleString()}`;
+        document.getElementById('r-saldo').innerText = `$${(precio - enganche).toLocaleString()}`;
+        document.getElementById('r-fecha').innerText = new Date().toLocaleDateString();
+
+        const saldo = precio - enganche;
+        const tasa = 0.169;
+        const plazos = [12, 24, 36, 48, 60];
+        let htmlTabla = "";
+        
+        plazos.forEach(mes => {
+            const cuota = (saldo + (saldo * (tasa / 12 * mes))) / mes;
+            htmlTabla += `<tr><td>${mes} Meses</td><td style="text-align: right;"><b>$${cuota.toLocaleString('es-MX', {maximumFractionDigits:0})}</b></td></tr>`;
+        });
+        document.getElementById('tabla-plazos').innerHTML = htmlTabla;
+
+        // Guardar en sistema local
+        guardarCliente(nombre, tel, vehiculo);
+
+        // Crear Imagen
+        setTimeout(() => {
+            html2canvas(document.getElementById('render-area'), { scale: 3 }).then(canvas => {
+                const img = document.getElementById('preview-img');
+                img.src = canvas.toDataURL("image/png");
+                img.style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('instruccion-copia').style.display = 'block';
+                
+                // Abrir WhatsApp con delay para dejar copiar
+                setTimeout(() => {
+                    const msg = encodeURIComponent(`Hola ${nombre}, te comparto la cotización del *${vehiculo}* que revisamos. ¡Espero te guste! (Pega la imagen aquí abajo)`);
+                    window.open(`https://wa.me/52${tel}?text=${msg}`);
+                }, 2000);
+            });
+        }, 500);
+    }
+
+    function guardarCliente(nombre, tel, vehiculo) {
+        let clientes = JSON.parse(localStorage.getItem('clientes_vw')) || [];
+        clientes.unshift({ nombre, tel, vehiculo, fecha: new Date().toLocaleDateString() });
+        clientes = clientes.slice(0, 5); // Guardar solo los últimos 5
+        localStorage.setItem('clientes_vw', JSON.stringify(clientes));
+        mostrarClientes();
+    }
+
+    function mostrarClientes() {
+        const clientes = JSON.parse(localStorage.getItem('clientes_vw')) || [];
+        const lista = document.getElementById('lista-clientes');
+        lista.innerHTML = clientes.length ? "" : "<p style='font-size:12px; color:#999;'>No hay clientes guardados.</p>";
+        
+        clientes.forEach(c => {
+            lista.innerHTML += `
+                <div class="client-item">
+                    <div class="client-info">
+                        <b>${c.nombre}</b>
+                        <span>${c.vehiculo} • ${c.fecha}</span>
+                    </div>
+                    <a href="https://wa.me/52${c.tel}" class="btn-wa-sm">WhatsApp</a>
+                </div>
+            `;
+        });
+    }
+
+    // Cargar historial al iniciar
+    mostrarClientes();
+</script>
+
+</body>
+</html>
